@@ -15,7 +15,7 @@ Click the button down below to download the setup file of this application.
   
 ## License
 
-This work is under an [GNU AFFERO GENERAL PUBLIC license](LICENSE)
+This work is under a [GNU AFFERO GENERAL PUBLIC license](LICENSE)
 
 ## Support
 
