@@ -3,10 +3,14 @@
 
 Click the button down below to download the setup file of this application.
 
-[![Download SETUP](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://www.mediafire.com/file/cradspk4gnfpv40/Tyspidal_Setup.exe/file)
+[![Download from MediaFire](https://custom-icon-badges.demolab.com/badge/-Download(MediaFire)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://www.mediafire.com/file/cradspk4gnfpv40/Tyspidal_Setup.exe/file)  [![Download from GIT](https://custom-icon-badges.demolab.com/badge/-Download(GIT)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://github.com/CCRami/Tyspidal/raw/main/Tyspidal_Setup.exe)
+
+![GUI](https://i.imgur.com/GOB8ltQ.png)
 
 ### ✨ Features:
++ Friendly Interface	
 + **AdFree**, No ads whatsoever
++ Lightweight application
 + No tracking/analytics
   
 ⚠️ Thanks to the creators of the following repositories:
