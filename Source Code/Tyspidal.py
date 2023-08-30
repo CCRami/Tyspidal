@@ -1,4 +1,3 @@
-
 from auth import open_tidal_session, open_spotify_session
 from functools import partial
 from multiprocessing import Pool, freeze_support
@@ -14,12 +13,18 @@ import yaml
 import threading
 import os
 import webbrowser
+import requests
 from bs4 import BeautifulSoup
 import urllib.request
+from startup import startup
+
 
 
 
 import customtkinter
+from PIL import Image, ImageTk
+from io import BytesIO
+from urllib.request import urlopen
 
 def is_admin():
     try:
@@ -344,11 +349,15 @@ class App(customtkinter.CTk):
         
         self.home_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Profile",
                                                    fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=self.home_button_event)
-        self.home_button.grid(row=2, column=0, sticky="ew")
+        self.home_button.grid(row=1, column=0, sticky="ew")
 
         self.frame_2_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Sync (Spotify/Tidal)",
                                                       fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=self.frame_2_button_event)
-        self.frame_2_button.grid(row=3, column=0, sticky="ew")
+        self.frame_2_button.grid(row=2, column=0, sticky="ew")
+
+        self.frame_0_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Settings",
+                                                      fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=self.frame_0_button_event)
+        self.frame_0_button.grid(row=3, column=0, sticky="ew")
 
         self.frame_3_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="About/Credits",
                                                       fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=self.frame_3_button_event)
@@ -366,6 +375,8 @@ class App(customtkinter.CTk):
         self.home_frame.grid_columnconfigure(0, weight=1)
         with open('config.yml', 'r') as f:
             config = yaml.safe_load(f)
+
+            #############################needs directory for pyinstaller/setup################################################
         def button_update():
             fname = "config.yml"
             config['spotify']['client_id']=entry_2.get()
@@ -374,6 +385,7 @@ class App(customtkinter.CTk):
             config['spotify']['redirect_uri']=entry_5.get()
             with open(fname, 'w') as yml_file:
                 yml_file.write(yaml.dump(config, default_flow_style=False))
+            
         label_1 = customtkinter.CTkLabel(master=self.home_frame, justify=customtkinter.LEFT, text="Welcome!")
         label_1.pack(pady=0, padx=0)
         label_1 = customtkinter.CTkLabel(master=self.home_frame, justify=customtkinter.LEFT, text="Client ID")
@@ -398,10 +410,13 @@ class App(customtkinter.CTk):
         entry_5.insert(0,config['spotify']['redirect_uri'])
 
         button_1 = customtkinter.CTkButton(master=self.home_frame, command=button_update,text="Update")
-        button_1.pack(pady=20, padx=10)
+        button_1.pack(pady=10, padx=10)
+        if not config['spotify']['client_id'] or not config['spotify']['client_secret'] or not config['spotify']['username'] or not config['spotify']['redirect_uri']:
+            label_must= customtkinter.CTkLabel(master=self.home_frame,justify=customtkinter.CENTER, text="Fill in the information above and restart the app please", cursor="hand2",text_color="red")
+            label_must.pack(pady=0, padx=0)
 
         label_1 = customtkinter.CTkLabel(master=self.home_frame, justify=customtkinter.CENTER, text="The Client ID and Client Secret are needed for authorization \nTo get yours, go to your spotify dashbord and click on the Create an App button")
-        label_1.pack(pady=0, padx=0)
+        label_1.pack(pady=20, padx=0)
         label= customtkinter.CTkLabel(master=self.home_frame,justify=customtkinter.CENTER, text="Open your Spotify dashboard", cursor="hand2",text_color="blue")
         label.pack(pady=0, padx=0)
         label.bind("<Button-1>", lambda e: callback("https://developer.spotify.com/dashboard"))
@@ -410,11 +425,54 @@ class App(customtkinter.CTk):
 
         # create second frame
         self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        label_1 = customtkinter.CTkLabel(master=self.second_frame, justify=customtkinter.LEFT, text="Spotify playlist ID")
-        label_1.pack(pady=0, padx=0)
-        entry_1 = customtkinter.CTkEntry(master=self.second_frame, placeholder_text="ID")
-        entry_1.pack(pady=0, padx=0)
+        if config['spotify']['client_id'] and config['spotify']['client_secret'] and config['spotify']['username'] and config['spotify']['redirect_uri']:
+            spotify_session = open_spotify_session(config['spotify'])
+            data = spotify_session.current_user_playlists()
+            playlist_info = {}
 
+            # Populate the playlist_info dictionary
+            for item in data['items']:
+                playlist_id = item['id']
+                playlist_name = item['name']
+                
+                # Check if 'images' key is present and extract the first image URL if available
+                if 'images' in item and len(item['images']) > 0:
+                    playlist_url = item['images'][0]['url']
+                else:
+                    playlist_url = None
+                
+                playlist_info[playlist_name] = {
+                'id': playlist_id,
+                'url': playlist_url
+                }
+            mlist=list(playlist_info.keys())
+            def optionmenu_callback(choice):
+                #print("optionmenu dropdown clicked:", choice)
+                entry_1.delete(0,customtkinter.END)
+                entry_1.insert(0,playlist_info[choice]['id'])
+                try:
+                    image=display_image(playlist_info[choice]['url'])
+                    myimage.configure(light_image=image,dark_image=image)
+                    button.configure(text="")
+                except:
+                    button.configure(text="error displaying image \nbut it's fine my g carry on")
+
+            def display_image(image_url):
+                response = urlopen(image_url)
+                image_data = response.read()
+                image = Image.open(BytesIO(image_data))
+                return image
+            
+            optionmenu = customtkinter.CTkOptionMenu(master=self.second_frame, values=mlist,command=optionmenu_callback)
+            optionmenu.pack(pady=10, padx=10)
+            myimage=customtkinter.CTkImage(light_image=display_image(list(playlist_info.values())[0]['url']),dark_image=display_image(list(playlist_info.values())[0]['url']),size=(100, 100))
+            button = customtkinter.CTkButton(self.second_frame, image=myimage,text='',fg_color="transparent",state="disabled")
+            button.pack()
+            label_1 = customtkinter.CTkLabel(master=self.second_frame, justify=customtkinter.LEFT, text="Spotify playlist ID")
+            label_1.pack(pady=0, padx=0)
+            entry_1 = customtkinter.CTkEntry(master=self.second_frame, placeholder_text="ID")
+            entry_1.pack(pady=0, padx=0)
+            entry_1.insert(0,list(playlist_info.values())[0]['id'])
         button_2 = customtkinter.CTkButton(master=self.second_frame, command=button_sync,text="Sync")
         button_2.pack(pady=20, padx=10)
 
@@ -457,9 +515,20 @@ class App(customtkinter.CTk):
                                                    fg_color="red", text_color=("gray10", "gray90"), anchor="w")
             self.status.grid(row=6, column=0, sticky="ew")
 
+        # create settings frame
+        self.settings_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        def switch_event():
+            startup(switch.get())
+            config['settings']['startup']=switch.get()
+            with open("config.yml", 'w') as yml_file:
+                yml_file.write(yaml.dump(config, default_flow_style=False))
+        switch = customtkinter.CTkSwitch(master=self.settings_frame, text="Run on windows startup (to keep your playlists synced)",command=switch_event)
+        if config['settings']['startup']:
+            switch.toggle()
+        switch.pack(padx=10, pady=(20, 20))
+
+
         
-
-
         # select default frame
         self.select_frame_by_name("home")
 
@@ -467,6 +536,7 @@ class App(customtkinter.CTk):
         # set button color for selected button
         self.home_button.configure(fg_color=("gray75", "gray25") if name == "home" else "transparent")
         self.frame_2_button.configure(fg_color=("gray75", "gray25") if name == "frame_2" else "transparent")
+        self.frame_0_button.configure(fg_color=("gray75", "gray25") if name == "frame_0" else "transparent")
         self.frame_3_button.configure(fg_color=("gray75", "gray25") if name == "frame_3" else "transparent")
 
         # show selected frame
@@ -478,6 +548,10 @@ class App(customtkinter.CTk):
             self.second_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.second_frame.grid_forget()
+        if name == "frame_0":
+            self.settings_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.settings_frame.grid_forget()
         if name == "frame_3":
             self.third_frame.grid(row=0, column=1, sticky="nsew")
         else:
@@ -488,6 +562,9 @@ class App(customtkinter.CTk):
 
     def frame_2_button_event(self):
         self.select_frame_by_name("frame_2")
+
+    def frame_0_button_event(self):
+        self.select_frame_by_name("frame_0")
 
     def frame_3_button_event(self):
         self.select_frame_by_name("frame_3")
@@ -505,6 +582,9 @@ if __name__ == "__main__":
             'client_secret': '',
             'redirect_uri': 'http://localhost:8888/callback',
             'username': ''
+        },
+        'settings': {
+            'startup': '0'
         }
         }
 
