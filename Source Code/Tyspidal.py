@@ -518,11 +518,12 @@ class App(customtkinter.CTk):
                 ]
                 add_schedule(id_data)
                 task_name = "Sync playlist id "+entry_1.get()
-                exec_path = os.getcwd()+"\\Taskspydal.exe"
+                exec_name = "Taskspydal.exe"
+                exec_path = os.getcwd()
                 start_time = now.strftime("%H:%M:%S")
                 schedule_type = optionmenu_1.get()
                 command = (
-                    f'schtasks /Create /TN "{task_name}" /TR "start {exec_path}" '
+                    f'schtasks /Create /TN "{task_name}" /TR "cd "{exec_path}" && {exec_name}" '
                     f'/ST {start_time} /SC {schedule_type}'
                 )
                 subprocess.run(command, shell=True)
