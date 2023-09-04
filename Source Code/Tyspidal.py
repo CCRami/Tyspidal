@@ -17,14 +17,30 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.request
 from startup import startup
-
-
-
-
+import subprocess
 import customtkinter
-from PIL import Image, ImageTk
+from PIL import Image
 from io import BytesIO
 from urllib.request import urlopen
+
+def add_schedule(id_data):
+    try:
+        with open('config.yml', 'r') as yaml_file:
+            config = yaml.safe_load(yaml_file)
+    except FileNotFoundError:
+        config = {'schedule': {}}
+    if 'schedule' not in config:
+        config['schedule'] = {}
+
+    for id_data in id_data:
+        id_value = id_data['id']
+        config['schedule'][id_value] = {
+            'type': id_data['type'],
+            'last_up': id_data['last_up']
+        }
+
+    with open('config.yml', 'w') as yaml_file:
+        yaml.dump(config, yaml_file, default_flow_style=False)
 
 def is_admin():
     try:
@@ -290,14 +306,13 @@ def sync(url):
         try:
             spotify_playlist = spotify_session.playlist(url)
         except spotipy.SpotifyException as e:
-            print("Error getting Spotify playlist \"" + url + "\"\nMake sure the playlist is yours and the ID is correct.")
-            #print(e)
-            #results.append(None)
+            print("Error getting Spotify playlist \"" + url + "\"\nMake sure the playlist ID is correct.")
+            print(e)
             return
         tidal_playlists = get_tidal_playlists_dict(tidal_session)
         tidal_playlist = pick_tidal_playlist_for_spotify_playlist(spotify_playlist, tidal_playlists)
         sync_list(spotify_session, tidal_session, [tidal_playlist], config)
-
+        
 
 
 
@@ -422,14 +437,28 @@ class App(customtkinter.CTk):
         label.bind("<Button-1>", lambda e: callback("https://developer.spotify.com/dashboard"))
         
 
-
+        def connect(host='http://google.com'):
+            try:
+                urllib.request.urlopen(host) #Python 3.x
+                return True
+            except:
+                return False
+        # create tabview
+        
         # create second frame
         self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        if config['spotify']['client_id'] and config['spotify']['client_secret'] and config['spotify']['username'] and config['spotify']['redirect_uri']:
+        self.second_frame.grid(in_=self, row=1, column=0, columnspan=3)
+        self.tabview = customtkinter.CTkTabview(self.second_frame, width=1000, height=1000)
+        self.tabview.pack()
+        self.tabview.add("Normal")
+        self.tabview.add("Scheduled")
+        if config['spotify']['client_id'] and config['spotify']['client_secret'] and config['spotify']['username'] and config['spotify']['redirect_uri'] and connect():
+            tidal_session = open_tidal_session()
             spotify_session = open_spotify_session(config['spotify'])
+            os.startfile(os.getcwd()+"\\Taskspydal.exe")
             data = spotify_session.current_user_playlists()
             playlist_info = {}
-
+            
             # Populate the playlist_info dictionary
             for item in data['items']:
                 playlist_id = item['id']
@@ -462,24 +491,57 @@ class App(customtkinter.CTk):
                 image_data = response.read()
                 image = Image.open(BytesIO(image_data))
                 return image
-            
-            optionmenu = customtkinter.CTkOptionMenu(master=self.second_frame, values=mlist,command=optionmenu_callback)
+            #Normal
+            optionmenu = customtkinter.CTkOptionMenu(self.tabview.tab("Normal"), values=mlist,command=optionmenu_callback)
             optionmenu.pack(pady=10, padx=10)
             myimage=customtkinter.CTkImage(light_image=display_image(list(playlist_info.values())[0]['url']),dark_image=display_image(list(playlist_info.values())[0]['url']),size=(100, 100))
-            button = customtkinter.CTkButton(self.second_frame, image=myimage,text='',fg_color="transparent",state="disabled")
+            button = customtkinter.CTkButton(self.tabview.tab("Normal"), image=myimage,text='',fg_color="transparent",state="disabled")
             button.pack()
-            label_1 = customtkinter.CTkLabel(master=self.second_frame, justify=customtkinter.LEFT, text="Spotify playlist ID")
+            label_1 = customtkinter.CTkLabel(self.tabview.tab("Normal"), justify=customtkinter.LEFT, text="Spotify playlist ID")
             label_1.pack(pady=0, padx=0)
-            entry_1 = customtkinter.CTkEntry(master=self.second_frame, placeholder_text="ID")
+            entry_1 = customtkinter.CTkEntry(self.tabview.tab("Normal"), placeholder_text="ID")
             entry_1.pack(pady=0, padx=0)
             entry_1.insert(0,list(playlist_info.values())[0]['id'])
-        button_2 = customtkinter.CTkButton(master=self.second_frame, command=button_sync,text="Sync")
-        button_2.pack(pady=20, padx=10)
-
-        console_frame = customtkinter.CTkFrame(master=self.second_frame)
-        console_frame.pack(fill="both", expand=True)
-        output_text  = customtkinter.CTkTextbox(master=console_frame)
-        output_text.pack(pady=10, padx=10, fill="both", expand=True)
+            button_2 = customtkinter.CTkButton(self.tabview.tab("Normal"), command=button_sync,text="Sync")
+            button_2.pack(pady=5, padx=5)
+            console_frame = customtkinter.CTkFrame(self.tabview.tab("Normal"))
+            console_frame.pack(side=customtkinter.LEFT,fill="both", expand=True)
+            output_text  = customtkinter.CTkTextbox(master=console_frame)
+            output_text.pack(pady=5, padx=5, fill="both", expand=True)
+            #Scheduled
+            def button_schedule():
+                from datetime import datetime
+                now = datetime.now()
+                import datetime
+                id_data = [
+                {'id': entry_1.get(), 'type': optionmenu_1.get(), 'last_up': now.strftime("%d/%m/%Y %H:%M:%S")}
+                ]
+                add_schedule(id_data)
+                task_name = "Sync playlist id "+entry_1.get()
+                exec_path = os.getcwd()+"\\Taskspydal.exe"
+                start_time = now.strftime("%H:%M:%S")
+                schedule_type = optionmenu_1.get()
+                command = (
+                    f'schtasks /Create /TN "{task_name}" /TR "start {exec_path}" '
+                    f'/ST {start_time} /SC {schedule_type}'
+                )
+                subprocess.run(command, shell=True)
+            optionmenu = customtkinter.CTkOptionMenu(self.tabview.tab("Scheduled"), values=mlist,command=optionmenu_callback)
+            optionmenu.pack(pady=10, padx=10)
+            myimage=customtkinter.CTkImage(light_image=display_image(list(playlist_info.values())[0]['url']),dark_image=display_image(list(playlist_info.values())[0]['url']),size=(100, 100))
+            button = customtkinter.CTkButton(self.tabview.tab("Scheduled"), image=myimage,text='',fg_color="transparent",state="disabled")
+            button.pack()
+            label_1 = customtkinter.CTkLabel(self.tabview.tab("Scheduled"), justify=customtkinter.LEFT, text="Spotify playlist ID")
+            label_1.pack(pady=0, padx=0)
+            entry_1 = customtkinter.CTkEntry(self.tabview.tab("Scheduled"), placeholder_text="ID")
+            entry_1.pack(pady=0, padx=0)
+            entry_1.insert(0,list(playlist_info.values())[0]['id'])
+            label_1 = customtkinter.CTkLabel(self.tabview.tab("Scheduled"), justify=customtkinter.LEFT, text="Schedule type")
+            label_1.pack(pady=0, padx=0)
+            optionmenu_1 = customtkinter.CTkOptionMenu(self.tabview.tab("Scheduled"), values=["HOURLY","DAILY","WEEKLY","MONTHLY"],text_color="yellow")
+            optionmenu_1.pack(pady=0, padx=0)
+            button_2 = customtkinter.CTkButton(self.tabview.tab("Scheduled"), command=button_schedule,text="Schedule Sync")
+            button_2.pack(pady=20, padx=10)
 
         
 
@@ -493,12 +555,7 @@ class App(customtkinter.CTk):
         label= customtkinter.CTkLabel(master=self.third_frame,justify=customtkinter.CENTER, text="Spotify to Tidal", cursor="hand2",text_color="blue")
         label.pack(pady=0, padx=0)
         label.bind("<Button-1>", lambda e: callback("https://github.com/timrae/spotify_to_tidal"))
-        def connect(host='http://google.com'):
-            try:
-                urllib.request.urlopen(host) #Python 3.x
-                return True
-            except:
-                return False
+        
         if connect() :
             url = "https://ivory-britney-30.tiiny.site/"
             response = requests.get(url)
@@ -585,6 +642,8 @@ if __name__ == "__main__":
         },
         'settings': {
             'startup': '0'
+        },
+        'schedule':{
         }
         }
 
@@ -597,6 +656,7 @@ if __name__ == "__main__":
         else:
             print(f"{config_file_path} already exists.")
         app = App()
+        app.resizable(False, False)
         app.mainloop()
     else:
     # Re-run the program with admin rights
