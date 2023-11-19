@@ -3,7 +3,9 @@
 
 Click the button down below to download the setup file of this application.
 
-[![Download from MediaFire](https://custom-icon-badges.demolab.com/badge/-Download(MediaFire)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://www.mediafire.com/file/59hwqmfexx9jnpe/Tyspidal_v0.3.1_Setup.exe/file) [![Download from GIT](https://custom-icon-badges.demolab.com/badge/-Download(GIT)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://github.com/CCRami/Tyspidal/raw/main/Tyspidal_v0.3.1_Setup.exe) ![VERSION](https://img.shields.io/badge/updated-0.3.1-green.svg)
+[![Download from MediaFire](https://custom-icon-badges.demolab.com/badge/-Download(MediaFire)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://www.mediafire.com/file/cradspk4gnfpv40/Tyspidal_Setup.exe/file) ![VERSION](https://img.shields.io/badge/Stable✔-0.1-green.svg)
+
+[![Download from MediaFire](https://custom-icon-badges.demolab.com/badge/-Download(MediaFire)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://www.mediafire.com/file/59hwqmfexx9jnpe/Tyspidal_v0.3.1_Setup.exe/file) [![Download from GIT](https://custom-icon-badges.demolab.com/badge/-Download(GIT)-blue?style=for-the-badge&logo=download&logoColor=white "Download zip")](https://github.com/CCRami/Tyspidal/raw/main/Tyspidal_v0.3.1_Setup.exe) ![VERSION](https://img.shields.io/badge/Unstable!-0.3.1-green.svg)
 
 ![GUI](https://i.imgur.com/9vqW50L.png)
 
