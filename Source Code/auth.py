@@ -42,7 +42,7 @@ def open_tidal_session(config = None):
 
     login, future = session.login_oauth()
     print('Login with the webbrowser: ' + login.verification_uri_complete)
-    print ('Please wait if an error accured or just restart the app mate who cares...')
+    print ('Please wait if an error occurred or just restart the app mate who cares...')
     url = login.verification_uri_complete
     if not url.startswith('https://'):
         url = 'https://' + url
